@@ -1,8 +1,9 @@
-
+#include "PCA9624.h"
 
 #define CLI_CMDS_MAX 8
 #define CLI_LINE_MAX 128
 #define CLI_ARGS_MAX 16
+#define PCA9624_I2C_ADDR 0x60
 
 
 class Command
@@ -158,6 +159,7 @@ int Cli::run(void)
 
 //Global Variables
 Cli led_cli("> ");
+PCA9624 pca9624(PCA9624_I2C_ADDR);
 
 
 void reset_terminal(void)
@@ -184,20 +186,43 @@ int echo(Command *cmd, int argc, char *argv[])
   return 0;
 }
 
-int rgb(Command *cmd, int argc, char *argv[])
+int led(Command *cmd, int argc, char *argv[])
 {
+  if (argc != 3) {
+    Serial.println("Usage: led <led-number> <duty-cycle>");
+    return -1;
+  }
+  int led = atoi(argv[1]);
+  if (led < 0 || led >= PCA9624::LED_MAX) {
+    Serial.println("ERR: led: led-number is out of range! (0..7)");
+    return -1;
+  }
+  int duty_cycle = atoi(argv[2]);
+  if (duty_cycle < 0 || duty_cycle > PCA9624::DUTY_CYCLE_MAX) {
+    Serial.println("ERR: led: duty-cycle is out of range! (0..255)");
+    return -1;
+  }
+  if (!pca9624.set_pwm(led, (uint8_t)duty_cycle)) {
+    Serial.println("ERR: led: Unable to set duty-cycle!");
+  }
   return 0;
 }
 
 void setup()
 {
+  // Setup serial
   Serial.begin(115200);
   // Send escape sequence to reset terminal
   reset_terminal();
   // Setup CLI for the LED Controller
   led_cli.add(new Command("reset", reset));
   led_cli.add(new Command("echo", echo));
-  led_cli.add(new Command("rgb", rgb));
+  led_cli.add(new Command("led", led));
+  // Setup PCA9624 LED controller
+  if (!pca9624.begin()) {
+    Serial.println("pca9624: error!");
+    while(true);
+  }
   Serial.println("led_control: ok.");
   // Start CLI
   led_cli.start();
