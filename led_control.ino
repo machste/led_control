@@ -55,14 +55,13 @@ private:
   bool started;
   bool echo;
   char line[CLI_LINE_MAX];
-  int line_pos;
-  char prev_ch;
+  size_t line_pos;
 
   int run(void);
 };
 
 Cli::Cli(const char *prompt, bool echo)
-  : prompt(prompt), echo(echo), cmds_size(0), started(false)
+  : prompt(prompt), cmds_size(0), started(false), echo(echo)
 {}
 
 bool Cli::add(Command *cmd)
@@ -75,6 +74,7 @@ bool Cli::add(Command *cmd)
   } else {
     return false;
   }
+  return true;
 }
 
 void Cli::start(void)
@@ -82,7 +82,6 @@ void Cli::start(void)
   if (!started) {
     Serial.print(prompt);
     line_pos = 0;
-    prev_ch = 0;
     started = true;
   }
 }
@@ -114,14 +113,13 @@ void Cli::feed(char ch)
       line_pos++;
     }
   }
-  prev_ch = ch;
 }
 
 int Cli::run(void)
 {
   int argc = 0;
   char *argv[CLI_ARGS_MAX];
-  int pos = 0;
+  size_t pos = 0;
   bool arg_started = false;
   while(pos < line_pos) {
     if (isspace(line[pos])) {
@@ -144,7 +142,7 @@ int Cli::run(void)
   }
   if (argc > 0) {
     // Search for command
-    for (int i = 0; i < cmds_size; i++) {
+    for (size_t i = 0; i < cmds_size; i++) {
       if (strcmp(argv[0], cmds[i]->get_name()) == 0) {
         return cmds[i]->run(argc, argv);
       }
