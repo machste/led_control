@@ -3,7 +3,9 @@
 #define CLI_CMDS_MAX 8
 #define CLI_LINE_MAX 128
 #define CLI_ARGS_MAX 16
-#define PCA9624_I2C_ADDR 0x60
+#define PCA9624_I2C_ADDR 0x13
+#define PCA9624_OE_PIN 2
+#define PCA9624_OE_DEFAULT HIGH
 
 
 class Command
@@ -208,6 +210,43 @@ int led(Command *cmd, int argc, char *argv[])
   return 0;
 }
 
+bool to_bool(const char *s, bool *success=NULL)
+{
+  if (success != NULL) *success = true;
+  String bool_str(s);
+  bool_str.trim();
+  bool_str.toLowerCase();
+  if (bool_str == "1" || bool_str == "true" || bool_str == "high" || bool_str == "on") {
+    return true;
+  } else if (bool_str == "0" || bool_str == "false" || bool_str == "low" || bool_str == "off") {
+    return false;
+  } else {
+    if (success != NULL) *success = false;
+  }
+  return false;
+}
+
+int output(Command *cmd, int argc, char *argv[])
+{
+  if (argc != 2) {
+    Serial.println("Usage: output <0|1>");
+    return -1;
+  }
+  bool success;
+  bool output_state = to_bool(argv[1], &success);
+  if (!success) {
+    Serial.println("ERR: output: Invalid argument!");
+    return -1;
+  } 
+  if (output_state) {
+    digitalWrite(PCA9624_OE_PIN, LOW);
+  } else {
+    digitalWrite(PCA9624_OE_PIN, HIGH);
+  }
+  return 0;
+}
+
+
 void setup()
 {
   // Setup serial
@@ -218,11 +257,16 @@ void setup()
   led_cli.add(new Command("reset", reset));
   led_cli.add(new Command("echo", echo));
   led_cli.add(new Command("led", led));
+  led_cli.add(new Command("output", output));
   // Setup PCA9624 LED controller
   if (!pca9624.begin()) {
     Serial.println("pca9624: error!");
     while(true);
   }
+  pca9624.clear_all();
+  // Setup Output Enable OE of the PCA9624
+  pinMode(PCA9624_OE_PIN, OUTPUT);
+  digitalWrite(PCA9624_OE_PIN, PCA9624_OE_DEFAULT);
   Serial.println("led_control: ok.");
   // Start CLI
   led_cli.start();

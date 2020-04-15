@@ -50,5 +50,12 @@ bool PCA9624::set_pwm(int led, uint8_t duty_cycle)
   return Wire.endTransmission() == 0;
 }
 
+void PCA9624::clear_all(void)
+{
+  for (int i = 0; i < LED_MAX; i++) {
+    set_pwm(i, 0);
+  }
+}
+
 const int PCA9624::LED_MAX = 8;
 const int PCA9624::DUTY_CYCLE_MAX = 255;
