@@ -2,6 +2,9 @@
 
 #include <Wire.h>
 
+// Control Register
+#define CTRL_AUTO_INC_ALL 0x80
+
 // Registers
 #define MODE1       0x00
 #define MODE2       0x01
@@ -22,21 +25,23 @@
 #define SUBADR3     0x10
 #define ALLCALLADR  0x11
 
+#define MODE1_ALLCALL 0x01
 
-PCA9624::PCA9624(uint8_t addr)
-  : addr(addr)
+
+PCA9624::PCA9624(uint8_t all_call_addr)
+  : all_call_addr(all_call_addr)
 {}
 
-bool PCA9624::begin(void)
+bool PCA9624::begin(uint8_t addr)
 {
   Wire.begin();
   // Initialise register MODE1
-  uint8_t cmd_mode1[] = {MODE1, 0x00};
+  uint8_t cmd_mode1[] = {MODE1, MODE1_ALLCALL};
   Wire.beginTransmission(addr);
   Wire.write(cmd_mode1, sizeof(cmd_mode1));
   Wire.endTransmission();
   // Initialise registers LEDOUT0 and LEDOUT1
-  uint8_t cmd_ledout[] = {LEDOUT0, 0xAA, 0xAA};
+  uint8_t cmd_ledout[] = {LEDOUT0 & CTRL_AUTO_INC_ALL, 0xAA, 0xAA};
   Wire.beginTransmission(addr);
   Wire.write(cmd_ledout, sizeof(cmd_ledout));
   return Wire.endTransmission() == 0;
@@ -44,9 +49,9 @@ bool PCA9624::begin(void)
 
 bool PCA9624::set_pwm(int led, uint8_t duty_cycle)
 {
-  uint8_t cmd_set_pwm[] = {(uint8_t)(PWM0 + led), duty_cycle};
-  Wire.beginTransmission(addr);
-  Wire.write(cmd_set_pwm, sizeof(cmd_set_pwm));
+  uint8_t cmd[] = {(uint8_t)(PWM0 + led), duty_cycle};
+  Wire.beginTransmission(all_call_addr);
+  Wire.write(cmd, sizeof(cmd));
   return Wire.endTransmission() == 0;
 }
 
