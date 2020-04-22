@@ -23,12 +23,12 @@
 #define ALLCALLADR  0x11
 
 
-PCA9624::PCA9624(uint8_t addr)
-  : addr(addr)
+PCA9624::PCA9624(void)
 {}
 
-bool PCA9624::begin(void)
+bool PCA9624::begin(uint8_t i2c_addr)
 {
+  addr = i2c_addr;
   Wire.begin();
   // Initialise register MODE1
   uint8_t cmd_mode1[] = {MODE1, 0x00};
@@ -36,9 +36,12 @@ bool PCA9624::begin(void)
   Wire.write(cmd_mode1, sizeof(cmd_mode1));
   Wire.endTransmission();
   // Initialise registers LEDOUT0 and LEDOUT1
-  uint8_t cmd_ledout[] = {LEDOUT0, 0xAA, 0xAA};
+  uint8_t cmd_ledout0[] = {LEDOUT0, 0xAA};
   Wire.beginTransmission(addr);
-  Wire.write(cmd_ledout, sizeof(cmd_ledout));
+  Wire.write(cmd_ledout0, sizeof(cmd_ledout0));
+  uint8_t cmd_ledout1[] = {LEDOUT1, 0xAA};
+  Wire.beginTransmission(addr);
+  Wire.write(cmd_ledout1, sizeof(cmd_ledout1));
   return Wire.endTransmission() == 0;
 }
 

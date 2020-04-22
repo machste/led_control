@@ -3,7 +3,7 @@
 #define CLI_CMDS_MAX 8
 #define CLI_LINE_MAX 128
 #define CLI_ARGS_MAX 16
-#define PCA9624_I2C_ADDR 0x13
+#define PCA9624_I2C_ADDRS { 0x11, 0x12, 0x13, 0x14 }
 #define PCA9624_OE_PIN 2
 #define PCA9624_OE_DEFAULT HIGH
 
@@ -161,7 +161,8 @@ int Cli::run(void)
 
 //Global Variables
 Cli led_cli("> ");
-PCA9624 pca9624(PCA9624_I2C_ADDR);
+uint8_t pca9624_addrs[] = PCA9624_I2C_ADDRS;
+PCA9624 pca9624s[sizeof(pca9624_addrs)];
 
 
 void reset_terminal(void)
@@ -204,8 +205,12 @@ int led(Command *cmd, int argc, char *argv[])
     Serial.println("ERR: led: duty-cycle is out of range! (0..255)");
     return -1;
   }
-  if (!pca9624.set_pwm(led, (uint8_t)duty_cycle)) {
-    Serial.println("ERR: led: Unable to set duty-cycle!");
+  for (int i = 0; i < sizeof(pca9624_addrs); i++) {
+    if (!pca9624s[i].set_pwm(led, (uint8_t)duty_cycle)) {
+      Serial.print("ERR: led: Unable to set duty-cycle (pca9624@");
+      Serial.print(pca9624_addrs[i]);
+      Serial.println(")!");
+    }
   }
   return 0;
 }
@@ -258,12 +263,17 @@ void setup()
   led_cli.add(new Command("echo", echo));
   led_cli.add(new Command("led", led));
   led_cli.add(new Command("output", output));
-  // Setup PCA9624 LED controller
-  if (!pca9624.begin()) {
-    Serial.println("pca9624: error!");
-    while(true);
+  // Setup PCA9624 LED controllers
+  for (int i = 0; i < sizeof(pca9624_addrs); i++) {
+    Serial.print("pca9624@");
+    Serial.print(pca9624_addrs[i]);
+    if (!pca9624s[i].begin(pca9624_addrs[i])) {
+      Serial.println(": error!");
+      while(true);
+    }
+    Serial.println(": ok.");
+    pca9624s[i].clear_all();
   }
-  pca9624.clear_all();
   // Setup Output Enable OE of the PCA9624
   pinMode(PCA9624_OE_PIN, OUTPUT);
   digitalWrite(PCA9624_OE_PIN, PCA9624_OE_DEFAULT);
