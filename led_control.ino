@@ -215,6 +215,18 @@ int led(Command *cmd, int argc, char *argv[])
   return 0;
 }
 
+int clear_all(Command *cmd, int argc, char *argv[])
+{
+  if (argc != 1) {
+    Serial.println("Usage: clear");
+    return -1;
+  }
+  for (int i = 0; i < sizeof(pca9624_addrs); i++) {
+    pca9624s[i].clear_all();
+  }
+  return 0;
+}
+
 bool to_bool(const char *s, bool *success=NULL)
 {
   if (success != NULL) *success = true;
@@ -262,6 +274,7 @@ void setup()
   led_cli.add(new Command("reset", reset));
   led_cli.add(new Command("echo", echo));
   led_cli.add(new Command("led", led));
+  led_cli.add(new Command("clear", clear_all));
   led_cli.add(new Command("output", output));
   // Setup PCA9624 LED controllers
   for (int i = 0; i < sizeof(pca9624_addrs); i++) {
