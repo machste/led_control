@@ -40,6 +40,7 @@ bool PCA9624::begin(uint8_t i2c_addr)
   Wire.beginTransmission(addr);
   Wire.write(cmd_ledout0, sizeof(cmd_ledout0));
   uint8_t cmd_ledout1[] = {LEDOUT1, 0xAA};
+  Wire.endTransmission();
   Wire.beginTransmission(addr);
   Wire.write(cmd_ledout1, sizeof(cmd_ledout1));
   return Wire.endTransmission() == 0;
